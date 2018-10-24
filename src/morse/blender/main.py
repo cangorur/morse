@@ -444,12 +444,25 @@ def load_overlays():
         for overlaid_name, overlay_details in overlays.items():
             overlay_name, kwargs = overlay_details
 
+            '''
             try:
                 overlaid_object = persistantstorage.componentDict[overlaid_name]
             except KeyError:
                 logger.error("Could not find the object to overlay: %s." %
                               overlaid_name)
                 return False
+            '''
+
+            overlaid_object = None
+            try:
+                overlaid_object = persistantstorage.componentDict[overlaid_name]
+            except KeyError:
+                for (k, v) in persistantstorage.robotDict.items():
+                    if str(k) == str(overlaid_name):
+                        overlaid_object = v
+            if overlaid_object == None:
+                logger.error("Could not find the object to overlay: %s." %
+                              overlaid_name)
 
             # Instanciate the overlay, passing the overlaid object to
             # the constructor + any optional arguments
@@ -822,3 +835,4 @@ def reset_objects(contr):
         b_obj.worldOrientation = state[1]
         # Reset physics simulation
         b_obj.restoreDynamics()
+
