@@ -3,6 +3,10 @@ import math
 from morse.builder.creator import SensorCreator, bpymorse
 from morse.builder.blenderobjects import *
 
+
+class HumanPosture(SensorCreator):
+    _classpath = "morse.sensors.human_posture.HumanPosture"
+
 class Accelerometer(SensorCreator):
     _classpath = "morse.sensors.accelerometer.Accelerometer"
 

@@ -2,6 +2,7 @@ import logging; logger = logging.getLogger("morse." + __name__)
 import math
 import morse.core.sensor
 from morse.helpers.components import add_data
+from morse.core import blenderapi
 
 class HumanPosture(morse.core.sensor.Sensor):
     """ 
@@ -218,6 +219,7 @@ class HumanPosture(morse.core.sensor.Sensor):
         self.local_data['pitch'] = float(self.position_3d.pitch)
         self.local_data['roll'] = float(self.position_3d.roll)
 
-        self._read_pose(self.bge_object)
+        armature = blenderapi.scene().objects['human.armature']
+        self._read_pose(armature)
 
         logger.debug("LOCAL_DATA: ", self.local_data)
