@@ -31,7 +31,7 @@ class Human(GraspingRobot):
         # these are to feed the human action back to the system (current state)
         self.is_wa = False  # is human walking away
         self.is_gr = False  # is human grasping
-        self.is_sd = False  # is human grasping
+        self.is_sd = False  # is sitting down
 
         self.is_la = False  # is human looking around
         self.is_wr = False  # is human warning the robot
@@ -58,70 +58,6 @@ class Human(GraspingRobot):
         self.change_back_rot = [0.0, 0.0, 0.0]
 
         logger.info('Component initialized')
-
-    @service
-    def look_left(self):
-        ''' look left'''
-        scene = blenderapi.scene()
-        head = scene.objects['Look_Empty']
-        back = scene.objects['Hips_Empty']
-
-        f_speed_head = [0, PI / 4, 0]
-
-        N = 50
-        head.applyMovement([f_speed_head[0] / N, f_speed_head[1] / N, f_speed_head[2] / N], True)
-        self.change_head = [x + y for x, y in zip(self.change_head, f_speed_head)]
-
-    @service
-    def look_right(self):
-        ''' look right'''
-        scene = blenderapi.scene()
-        head = scene.objects['Look_Empty']
-        back = scene.objects['Hips_Empty']
-
-        f_speed_head = [0, -PI / 4, 0]
-
-        N = 50
-        head.applyMovement([f_speed_head[0] / N, f_speed_head[1] / N, f_speed_head[2] / N], True)
-        self.change_head = [x + y for x, y in zip(self.change_head, f_speed_head)]
-
-    @service
-    def look_up(self):
-        ''' look up'''
-        scene = blenderapi.scene()
-        head = scene.objects['Look_Empty']
-        back = scene.objects['Hips_Empty']
-
-        f_speed_head = [0, 0, PI / 4]
-
-        N = 50
-        head.applyMovement([f_speed_head[0] / N, f_speed_head[1] / N, f_speed_head[2] / N], True)
-        self.change_head = [x + y for x, y in zip(self.change_head, f_speed_head)]
-
-    @service
-    def look_down(self):
-        ''' look down'''
-        scene = blenderapi.scene()
-        head = scene.objects['Look_Empty']
-        back = scene.objects['Hips_Empty']
-
-        f_speed_head = [0, 0, -PI / 4]
-
-        N = 50
-        head.applyMovement([f_speed_head[0] / N, f_speed_head[1] / N, f_speed_head[2] / N], True)
-        self.change_head = [x + y for x, y in zip(self.change_head, f_speed_head)]
-
-    @service
-    def walking_forward(self, distance):
-        ''' just walking forward a given distance'''
-        self.walk(distance)
-        self.stop_animation()
-
-    @service
-    def walking_backwards(self, distance):
-        ''' walking backwards a given distance'''
-        self.walk_backwards(distance)
-        self.stop_animation()
 
     @service
     def reset(self):
@@ -259,7 +195,7 @@ class Human(GraspingRobot):
         # human.applyMovement([sit_speed, 0, 0], True)
         armature['sitDown'] = True
         armature.update()
-        
+
         time.sleep(.5)
         """ Stops animating the human sitting down / standing up. """
         armature['sitDown'] = False
@@ -312,13 +248,19 @@ class Human(GraspingRobot):
         if self.is_wr:
             self.warn_robot_back()
 
+        human = self.bge_object
+        human.worldPosition = [7.7, -1.25, 0]
+        human.worldOrientation = [0, 0, -1.57]
+
         self.is_ov = False
         self.is_oir = False
 
-        self.rotate(185)
-        self.walk(3.5)
-        self.rotate(85)
+        self.rotate(-175)
+        self.walk(1)
+        self.rotate(10)
         self.walk(2)
+        self.rotate(70)
+        self.walk(1)
         self.stop_animation()
 
     def walk(self, distance):
@@ -338,336 +280,16 @@ class Human(GraspingRobot):
             armature.update()
             time.sleep(update_interval)
 
-########################################
-########### Start of my Part ###########
-########################################
-# TODO:
-# fix warning (lags)
-# lags in behaviour
-#
-
-    def walk_backwards(self, distance):
-        """ Moves and animates the human. """
-
-        frequency = 60
-        walk_speed = -0.05
-        duration = int(round(frequency * (distance / (frequency * abs(walk_speed)))))
-        update_interval = 1 / frequency
-
-        human = self.bge_object
-        armature = blenderapi.scene().objects['human.armature']
-
-        for i in range(duration):
-            human.applyMovement([walk_speed, 0, 0], True)
-            armature['movingForward'] = True
-            armature.update()
-            time.sleep(update_interval)
-
-    def bend_down(self):
-        # bend to grab the object
-
-        scene = blenderapi.scene()
-        hand_r = scene.objects['IK_Target_Empty.R']
-        hand_l = scene.objects['IK_Target_Empty.L']
-        dest = scene.objects['IK_Pose_Empty.R']
-        head = scene.objects['Look_Empty']
-        back = scene.objects['Hips_Empty']
-
-        f_speed_head = [0, 0, -0.4]
-        f_speed_right = [0.80, 0.2, -0.1]
-        f_speed_left = [0.80, -0.2, -0.1]
-        f_speed_back_rot = [45 * PI/180, 0, 0]
-        f_speed_back_loc = [0, -0.15, 0]
-        # fetch
-
-        N = 50
-        head.applyMovement([f_speed_head[0] / N, f_speed_head[1] / N, f_speed_head[2] / N], True)
-        hand_r.applyMovement([f_speed_right[0] / N, f_speed_right[1] / N, f_speed_right[2] / N], True)
-        hand_l.applyMovement([f_speed_left[0] / N, f_speed_left[1] / N, f_speed_left[2] / N], True)
-        back.applyRotation([f_speed_back_rot[0] / (N), f_speed_back_rot[1] / (N), f_speed_back_rot[2] / (N)], True)
-
-        self.change_hand_r = [x + y for x, y in zip(self.change_hand_r, f_speed_right)]
-        self.change_hand_l = [x + y for x, y in zip(self.change_hand_l, f_speed_left)]
-        self.change_head = [x + y for x, y in zip(self.change_head, f_speed_head)]
-        self.change_back = [x + y for x, y in zip(self.change_back, f_speed_back_loc)]
-        self.change_back_rot = [x + y for x, y in zip(self.change_back_rot, f_speed_back_rot)]
-
-    def bend_up(self):
-        # righten human
-
-        scene = blenderapi.scene()
-        hand_r = scene.objects['IK_Target_Empty.R']
-        hand_l = scene.objects['IK_Target_Empty.L']
-        dest = scene.objects['IK_Pose_Empty.R']
-        head = scene.objects['Look_Empty']
-        back = scene.objects['Hips_Empty']
-
-        f_speed_head = [0, 0, 0.4]
-        f_speed_right = [-0.80, -0.2, 0.1]
-        f_speed_left = [-0.80, 0.2, 0.1]
-        f_speed_back_rot = [-45 * PI/180, 0, 0]
-        f_speed_back_loc = [0, 0.15, 0]
-
-        N = 50
-        head.applyMovement([f_speed_head[0] / N, f_speed_head[1] / N, f_speed_head[2] / N], True)
-        hand_r.applyMovement([f_speed_right[0] / N, f_speed_right[1] / N, f_speed_right[2] / N], True)
-        hand_l.applyMovement([f_speed_left[0] / N, f_speed_left[1] / N, f_speed_left[2] / N], True)
-        back.applyRotation([f_speed_back_rot[0] / (N), f_speed_back_rot[1] / (N), f_speed_back_rot[2] / (N)], True)
-
-        self.change_hand_r = [x + y for x, y in zip(self.change_hand_r, f_speed_right)]
-        self.change_hand_l = [x + y for x, y in zip(self.change_hand_l, f_speed_left)]
-        self.change_head = [x + y for x, y in zip(self.change_head, f_speed_head)]
-        self.change_back = [x + y for x, y in zip(self.change_back, f_speed_back_loc)]
-        self.change_back_rot = [x + y for x, y in zip(self.change_back_rot, f_speed_back_rot)]
-
-    def bend_down_carrying(self):
-        # bend to grab the object
-
-        scene = blenderapi.scene()
-        hand_r = scene.objects['IK_Target_Empty.R']
-        hand_l = scene.objects['IK_Target_Empty.L']
-        dest = scene.objects['IK_Pose_Empty.R']
-        head = scene.objects['Look_Empty']
-        back = scene.objects['Hips_Empty']
-
-        f_speed_head = [0, 0, -0.4]
-        f_speed_right = [0.40, 0, -0.1]
-        f_speed_left = [0.40, 0, -0.1]
-        f_speed_back_rot = [40 * PI/180, 0, 0]
-        f_speed_back_loc = [0, -0.15, 0]
-        # fetch
-
-        N = 50
-        head.applyMovement([f_speed_head[0] / N, f_speed_head[1] / N, f_speed_head[2] / N], True)
-        hand_r.applyMovement([f_speed_right[0] / N, f_speed_right[1] / N, f_speed_right[2] / N], True)
-        hand_l.applyMovement([f_speed_left[0] / N, f_speed_left[1] / N, f_speed_left[2] / N], True)
-        back.applyRotation([f_speed_back_rot[0] / (N), f_speed_back_rot[1] / (N), f_speed_back_rot[2] / (N)], True)
-
-        self.change_hand_r = [x + y for x, y in zip(self.change_hand_r, f_speed_right)]
-        self.change_hand_l = [x + y for x, y in zip(self.change_hand_l, f_speed_left)]
-        self.change_head = [x + y for x, y in zip(self.change_head, f_speed_head)]
-        self.change_back = [x + y for x, y in zip(self.change_back, f_speed_back_loc)]
-        self.change_back_rot = [x + y for x, y in zip(self.change_back_rot, f_speed_back_rot)]
-
-    def bend_up_carrying(self):
-        # righten human
-
-        scene = blenderapi.scene()
-        hand_r = scene.objects['IK_Target_Empty.R']
-        hand_l = scene.objects['IK_Target_Empty.L']
-        dest = scene.objects['IK_Pose_Empty.R']
-        head = scene.objects['Look_Empty']
-        back = scene.objects['Hips_Empty']
-
-        f_speed_head = [0, 0, 0.4]
-        f_speed_right = [-0.40, 0, 0.1]
-        f_speed_left = [-0.40, 0, 0.1]
-        f_speed_back_rot = [-40 * PI/180, 0, 0]
-        f_speed_back_loc = [0, 0.15, 0]
-
-        N = 50
-        head.applyMovement([f_speed_head[0] / N, f_speed_head[1] / N, f_speed_head[2] / N], True)
-        hand_r.applyMovement([f_speed_right[0] / N, f_speed_right[1] / N, f_speed_right[2] / N], True)
-        hand_l.applyMovement([f_speed_left[0] / N, f_speed_left[1] / N, f_speed_left[2] / N], True)
-        back.applyRotation([f_speed_back_rot[0] / (N), f_speed_back_rot[1] / (N), f_speed_back_rot[2] / (N)], True)
-
-        self.change_hand_r = [x + y for x, y in zip(self.change_hand_r, f_speed_right)]
-        self.change_hand_l = [x + y for x, y in zip(self.change_hand_l, f_speed_left)]
-        self.change_head = [x + y for x, y in zip(self.change_head, f_speed_head)]
-        self.change_back = [x + y for x, y in zip(self.change_back, f_speed_back_loc)]
-        self.change_back_rot = [x + y for x, y in zip(self.change_back_rot, f_speed_back_rot)]
-
-    def package_in_range(self, distance):
-        """returns whether the package is close enough to grasp or not"""
-        return (self.distance() <= distance)
-
-    def grasping_attempt(self, distance):
-        """human attempts to grab object """
-        if (self.package_in_range(distance)):
-            scene = blenderapi.scene()
-            hand_r = scene.objects['IK_Target_Empty.R']
-            obj = scene.objects['package1']
-            obj.worldPosition = [hand_r.worldPosition[0] + 0.2, hand_r.worldPosition[1], hand_r.worldPosition[2] + 0.1]
-            obj.setParent(hand_r)
-            return True
-        return False
-
-    def lost_grip(self):
-        '''Lost grip of the package and the package drops'''
-        #obj.worldPosition = [hand_r.worldPosition[0] + 0.1, hand_r.worldPosition[1], hand_r.worldPosition[2] + 0.1]
-        scene = blenderapi.scene()
-        obj = scene.objects['package1']
-        obj.removeParent()
-
-    def parent_hand(self):
-        scene = blenderapi.scene()
-        obj = scene.objects['package1']
-        return obj.parent
-
-    def warning_robot(self):
-        """does the movement to warn the robot"""
-
-        scene = blenderapi.scene()
-        hand_r = scene.objects['IK_Target_Empty.R']
-        hand_l = scene.objects['IK_Target_Empty.L']
-        dest = scene.objects['IK_Pose_Empty.R']
-        head = scene.objects['Look_Empty']
-        back = scene.objects['Hips_Empty']
-
-        f_speed_head = [0, 0, 0]
-        f_speed_right = [0.75, -0.15, 0.45] # z = 0.50
-        f_speed_left = [0, -0, 0]
-        f_speed_back_rot = [5 * PI / 180, 0, 0]
-        f_speed_back_loc = [0, 0, 0]
-
-        N = 15
-        head.applyMovement([f_speed_head[0] / N, f_speed_head[1] / N, f_speed_head[2] / N], True)
-        hand_r.applyMovement([f_speed_right[0] / N, f_speed_right[1] / N, f_speed_right[2] / N], True)
-        hand_l.applyMovement([f_speed_left[0] / N, f_speed_left[1] / N, f_speed_left[2] / N], True)
-        back.applyRotation([f_speed_back_rot[0] / N, f_speed_back_rot[1] / N, f_speed_back_rot[2] / N], True)
-
-        self.change_hand_r = [x + y for x, y in zip(self.change_hand_r, f_speed_right)]
-        self.change_hand_l = [x + y for x, y in zip(self.change_hand_l, f_speed_left)]
-        self.change_head = [x + y for x, y in zip(self.change_head, f_speed_head)]
-        self.change_back = [x + y for x, y in zip(self.change_back, f_speed_back_loc)]
-        self.change_back_rot = [x + y for x, y in zip(self.change_back_rot, f_speed_back_rot)]
-
-    def warning_robot_back(self):
-        """does the movement to warn the robot"""
-
-        scene = blenderapi.scene()
-        hand_r = scene.objects['IK_Target_Empty.R']
-        hand_l = scene.objects['IK_Target_Empty.L']
-        dest = scene.objects['IK_Pose_Empty.R']
-        head = scene.objects['Look_Empty']
-        back = scene.objects['Hips_Empty']
-
-        f_speed_head = [0, 0, 0]
-        f_speed_right = [-0.75, 0.15, -0.45] # z = 0.50
-        f_speed_left = [0, 0, 0]
-        f_speed_back_rot = [-5 * PI / 180, 0, 0]
-        f_speed_back_loc = [0, 0, 0]
-
-        N = 15
-        head.applyMovement([f_speed_head[0] / N, f_speed_head[1] / N, f_speed_head[2] / N], True)
-        hand_r.applyMovement([f_speed_right[0] / N, f_speed_right[1] / N, f_speed_right[2] / N], True)
-        hand_l.applyMovement([f_speed_left[0] / N, f_speed_left[1] / N, f_speed_left[2] / N], True)
-        back.applyRotation([f_speed_back_rot[0] / N, f_speed_back_rot[1] / N, f_speed_back_rot[2] / N], True)
-
-        self.change_hand_r = [x + y for x, y in zip(self.change_hand_r, f_speed_right)]
-        self.change_hand_l = [x + y for x, y in zip(self.change_hand_l, f_speed_left)]
-        self.change_head = [x + y for x, y in zip(self.change_head, f_speed_head)]
-        self.change_back = [x + y for x, y in zip(self.change_back, f_speed_back_loc)]
-        self.change_back_rot = [x + y for x, y in zip(self.change_back_rot, f_speed_back_rot)]
-
-    def package_placed_correct(self, sizeoftray):
-        scene = blenderapi.scene()
-        box = scene.objects['ProcessedTray']
-        obj = scene.objects['package1']
-        vec1 = box.worldPosition
-        vec2 = obj.worldPosition
-        #print("Tray:")
-        #print(vec1)
-        #print("Pack:")
-        #print(vec2)
-        if (vec1[0]-sizeoftray/2<=vec2[0] and vec2[0]<=vec1[0]+sizeoftray/2):
-            if (vec1[1]-sizeoftray/2<=vec2[1] and vec2[1]<=vec1[1]+sizeoftray/2):
-                if (vec1[2]<=vec2[2]):
-                    return True
-        return False
-
-    def stop_walking_animation(self):
-        self.stop_animation()
-
-    def compute_angle(self, object_name, puffer):
-        """ Rotates and animates the human. """
-        scene = blenderapi.scene()
-        obj = scene.objects[object_name]
-        human = self.bge_object
-        h_coord = human.worldPosition
-        h_angle = human.worldOrientation
-        p_coord = obj.worldPosition
-
-        delta = h_coord - p_coord
-
-#compute angle
-        if delta[0]<0 and delta[1]<=0:
-            beta = math.atan(delta[1]/delta[0])
-        if delta[0]>=0  and delta[1]<0:
-            beta = math.atan(-delta[0]/delta[1]) +   PI/2
-        if delta[0]>0  and delta[1]>=0:
-            beta = math.atan(delta[1]/delta[0]) +   PI
-        if delta[0]<=0 and delta[1]>0:
-            beta = math.atan(-delta[0]/delta[1]) + 3*PI/2
-
-# compute "angle" human is orientated
-        sin=h_angle[1][0]
-        cos=h_angle[1][1]
-        if sin>=0:
-            alpha = math.acos(cos)
-        if sin<0 :
-            alpha = math.acos(-cos) + PI
-
-# decide which direction to rotate
-        fabs = math.fabs(beta - alpha)
-        if fabs<puffer:
-            return 0
-        if (fabs<=PI and alpha > beta) or (fabs>PI and alpha < beta):
-            return -1
-        if (fabs<=PI and alpha < beta) or (fabs>PI and alpha > beta):
-            return 1
-        return 1
-
-    def rotate_AI_package(self,degrees,puffer):
-        human = self.bge_object
-
-        frequency = 60
-        duration = int(round(frequency * (abs(degrees) / 180)))
-        rotation_speed = math.radians(180) / frequency # 180°/second
-
-        tmp = self.compute_angle('package1',puffer)
-        rotation_speed = rotation_speed * tmp
-
-        human = self.bge_object
-        armature = blenderapi.scene().objects['human.armature']
-
-        human.applyRotation([0, 0, rotation_speed], True)
-        armature['movingForward'] = True
-        armature.update()
-        return tmp
-
-    def rotate_AI_tray(self,degrees,puffer):
-        human = self.bge_object
-
-        frequency = 60
-        duration = int(round(frequency * (abs(degrees) / 180)))
-        rotation_speed = math.radians(180) / frequency # 180°/second
-
-        tmp = self.compute_angle('ProcessedTray',puffer)
-        rotation_speed = rotation_speed * tmp
-
-        human = self.bge_object
-        armature = blenderapi.scene().objects['human.armature']
-
-        human.applyRotation([0, 0, rotation_speed], True)
-        armature['movingForward'] = True
-        armature.update()
-        return tmp
-
-########################################
-############ End of my Part ############
-########################################
-
     def rotate(self, degrees):
         """ Rotates and animates the human. """
 
-        frequency = 60
+        frequency = 10
         duration = int(round(frequency * (abs(degrees) / 180)))
         rotation_speed = math.radians(180) / frequency # 180°/second
 
         if degrees < 0:
             rotation_speed = -rotation_speed
-        
+
         update_interval = 1 / frequency
 
         human = self.bge_object
@@ -681,11 +303,11 @@ class Human(GraspingRobot):
 
     def stop_animation(self):
         """ Stops animating the human after walk or rotation. """
-        
+
         time.sleep(.3)
         armature = blenderapi.scene().objects['human.armature']
         armature['movingForward'] = False
-        for channel in armature.channels:     
+        for channel in armature.channels:
             channel.rotation_mode = 6
             channel.joint_rotation = [0.0, 0.0, 0.0]
         armature.update()
@@ -698,12 +320,18 @@ class Human(GraspingRobot):
             self.is_wa = False
         else:
             return
-        
-        self.rotate(-180)
+
+        self.rotate(175)
+        self.walk(1)
+        self.rotate(-70)
         self.walk(2)
-        self.rotate(-85)
-        self.walk(3.5)
-        self.rotate(-5)
+        self.rotate(-10)
+        self.walk(0.9)
+
+        human = self.bge_object
+        human.worldPosition = [7.7, -1.25, 0]
+        human.worldOrientation = [0, 0, -1.57]
+
         self.stop_animation()
 
         self.is_ov = True
@@ -728,6 +356,9 @@ class Human(GraspingRobot):
     @service
     def look_around(self):
         """ Move the human head to look around. """
+
+        if self.is_wa:
+            self.walk_back()
 
         if self.is_la:
             return
@@ -841,6 +472,9 @@ class Human(GraspingRobot):
         else:
             self.is_wr = True
 
+        if self.is_wa:
+            self.walk_back()
+
         if self.is_la:
             self.look_back()
 
@@ -880,6 +514,8 @@ class Human(GraspingRobot):
 
         time.sleep(1)
         self.is_wr = True
+        self.is_ag = False
+        self.is_gr = False
 
     @service
     def warn_robot_back(self):
@@ -946,7 +582,9 @@ class Human(GraspingRobot):
     @service
     def grasp(self):
         ''' grasp object '''
-        
+
+        if self.is_wa:
+            self.walk_back()
         if self.is_gr or self.is_ag:
             self.attempt_grasp_back()
         if self.is_la:
@@ -1093,6 +731,7 @@ class Human(GraspingRobot):
             self.attempt_grasp_back()
             # time.sleep(0.5)
             self.is_ho = False
+            self.is_gr = True # I set it True after grasp back for the observation. Currently grasp call is not threaded
 
             ####### MOTION - 7 #######
             # turn left 90 degree
@@ -1113,7 +752,9 @@ class Human(GraspingRobot):
     @service
     def attempt_grasp(self):
         ''' attempt to grasp object '''
-        
+
+        if self.is_wa:
+            self.walk_back()
         if self.is_gr or self.is_ag:
             self.attempt_grasp_back()
         if self.is_la:
@@ -1287,7 +928,8 @@ class Human(GraspingRobot):
             obj.worldPosition = [7.7, -2.1, 0.80]
 
             self.attempt_grasp_back()
-            self.is_ho = False
+            self.is_ag = True # now that attempt grasp is not threaded, this is kept true for the observer to catch the action after it is done
+
             return True
 
         else:
@@ -1308,7 +950,6 @@ class Human(GraspingRobot):
         f_speed_left = [-1 * i for i in self.change_hand_l]
         f_speed_back_rot = [-1 * i for i in self.change_back_rot]
         f_speed_back_loc = [-1 * i for i in self.change_back]
-        # f_speed_back_loc = [y - x for x, y in zip([-0.0438, -0.0000, 0.9175], back.localPosition)]
 
         N = 20
         for i in range(N):
@@ -1391,4 +1032,3 @@ class Human(GraspingRobot):
     def default_action(self):
         """ Main function of this component. """
         pass
-
